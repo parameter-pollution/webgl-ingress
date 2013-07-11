@@ -59,17 +59,21 @@
 
       var randomPointInterval;
 
-      var earthTexture;
+      var numberOfTextures=3;
 
       if(!Detector.webgl){  //check for webgl support
         Detector.addGetWebGLMessage(); //Tell the user that his browser doesn't support webgl
-      } else { //let's get this party started ;-)
-   
+      } else {    
         // initialization
         init();
+      }
 
-        //start render loop
-        animate(); 
+      function textureLoadComplete(){
+        numberOfTextures--;
+        if( numberOfTextures === 0 ){ //all textures have been loaded, let's get this party started ;-)
+          //start render loop
+          animate();
+        }     
       }
 
       function init()
@@ -87,7 +91,7 @@
         
         //crosshair
         var crosshairGeometry = new THREE.PlaneGeometry( 40, 30 ); 
-        var crosshairMaterial = new THREE.MeshLambertMaterial( { map: THREE.ImageUtils.loadTexture('img/crosshair.png'), transparent:true, opacity:0.3 } ); 
+        var crosshairMaterial = new THREE.MeshLambertMaterial( { map: THREE.ImageUtils.loadTexture('img/crosshair.png', null, textureLoadComplete), transparent:true, opacity:0.3 } ); 
         crosshair = new THREE.Mesh(crosshairGeometry, crosshairMaterial);
         hud.addTracked(crosshair, crosshairTrackingPoint);
 
@@ -115,13 +119,13 @@
 
         // sphere parameters: radius, segments along width, segments along height
         var earthGeometry = new THREE.SphereGeometry( earth_radius, 64, 32 ); 
-        var earthMaterial = new THREE.MeshLambertMaterial( { map: THREE.ImageUtils.loadTexture('img/borders.jpg') } ); 
+        var earthMaterial = new THREE.MeshLambertMaterial( { map: THREE.ImageUtils.loadTexture('img/borders.jpg', null, textureLoadComplete) } ); 
         earth = new THREE.Mesh(earthGeometry, earthMaterial);
         earth.rotation.set(Math.PI/2,0,0);
         
 
         // layers
-        var layerMaterial = new THREE.MeshLambertMaterial( { map: THREE.ImageUtils.loadTexture('img/layer.png'), transparent:true, opacity:0.1 } ); 
+        var layerMaterial = new THREE.MeshLambertMaterial( { map: THREE.ImageUtils.loadTexture('img/layer.png', null, textureLoadComplete), transparent:true, opacity:0.1 } ); 
         
 
         //this function doesn't work when you start with adding layers with lower scale. but i have NO FUCKING IDEA why ^^
@@ -182,6 +186,7 @@
           orbit.fixAzimuth();
           orbit.autoRotate=false;
           window.clearInterval(randomPointInterval);
+          randomPointInterval=null;
 
           hud.updateTrackingPoint( new THREE.Vector3(intersects[0].point.x, intersects[0].point.y, intersects[0].point.z) );
 
@@ -191,7 +196,7 @@
             orbit.reset();
            
             hud.updateTrackingPoint(new THREE.Vector3(0,0,0));
-            randomPointInterval = setInterval( generateRandomTrackingPoint , 2000);             
+            if( randomPointInterval === null ) { randomPointInterval = setInterval( generateRandomTrackingPoint , 2000); }             
             setTimeout( function(){
               orbit.tween_to_orbit( { distance: 200}, 3000, TWEEN.Easing.Exponential.Out)
             }, 50); 
