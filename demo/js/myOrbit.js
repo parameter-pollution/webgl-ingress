@@ -1,3 +1,6 @@
+/*
+@coder paremeter-pollution / https://github.com/parameter-pollution/
+*/
 
 myOrbit = function ( camera, center, distance, clock ) {
 
@@ -7,13 +10,16 @@ myOrbit = function ( camera, center, distance, clock ) {
 
 	this.clock = clock;
 
-	this.autoRotate = false;
+	this.autoRotate = true;
 	this.autoRotateSpeed = 0.2; //radiants per millisecond
 
 	this.spherical = {};
 	this.spherical.azimuth = 0;
 	this.spherical.inclination = Math.PI/2;
 	this.spherical.distance = distance;
+	this.initialDistance = distance;
+
+	this.tween;
 
 	
 	this.update = function () {
@@ -39,20 +45,19 @@ myOrbit = function ( camera, center, distance, clock ) {
 		if( this.spherical.azimuth < 0 ){ this.spherical.azimuth = 2*Math.PI + this.spherical.azimuth; }	
 	}
 
-	this.tween_to_orbit = function( targetOrbit, duration, callback){
-
+	this.tween_to_orbit = function( targetOrbit, duration, tweenEasing, callback){
+		if( typeof this.tween !== "undefined" ){ this.tween.stop(); }
 	    if( this.spherical.azimuth - targetOrbit.azimuth > Math.PI ){
 	      targetOrbit.azimuth+=2*Math.PI;
 	    }else if( targetOrbit.azimuth - this.spherical.azimuth > Math.PI ){
 	      targetOrbit.azimuth= - (2*Math.PI - targetOrbit.azimuth );
 	    }
-	    var position_tween = new TWEEN.Tween(this.spherical).to( targetOrbit, duration);
-	    position_tween.easing(TWEEN.Easing.Cubic.InOut);
+	    this.tween = new TWEEN.Tween(this.spherical).to( targetOrbit, duration);
+	    this.tween.easing(tweenEasing);
 	    if( typeof callback !== "undefined" ){
-	    	position_tween.onComplete( callback );
+	    	this.tween.onComplete( callback );
 	    }
-
-	    position_tween.start();
+	    this.tween.start();
     }
 
     //assumes origin is (0,0,0)
@@ -67,11 +72,18 @@ myOrbit = function ( camera, center, distance, clock ) {
 
     this.convertSphericalToCartesian = function(spherical){
     	var point={};
-    	if( spherical.inclination )
     	point.x = spherical.distance * Math.sin( spherical.inclination ) * Math.cos( spherical.azimuth );
     	point.y = spherical.distance * Math.sin( spherical.inclination ) * Math.sin( spherical.azimuth );
     	point.z = spherical.distance * Math.cos( spherical.inclination );
     	return point;
+    }
+
+    this.reset = function(){
+    	this.spherical.azimuth=0;
+    	this.spherical.inclination=Math.PI/2;
+    	this.spherical.distance=this.initialDistance;
+    	this.autoRotate=true;
+    	this.update();
     }
 
 };

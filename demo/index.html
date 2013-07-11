@@ -4,17 +4,20 @@
     <title>WebGL Globe</title>
     <meta charset="utf-8">
     <style type="text/css">
+      html{
+        height: 100%;
+      }
       body {
         margin: 0;
         padding: 0;
-        color: #FFFFFF;
-        background-color: #000000;
         border: 0;
         overflow-y:hidden;
         overflow-x:hidden;
+        height: 100%;
+        background: #000000 url("img/loading.gif") center center no-repeat;
       }
       #universe{
-        heigth: 100%;
+        height: 100%;
         width: 100%;
         margin: 0;
         padding: 0;
@@ -33,6 +36,9 @@
     <script type="text/javascript" src="js/myOrbit.js"></script>
     <script type="text/javascript" src="js/myHUD.js"></script>
     <script type="text/javascript">
+      /*
+        @coder paremeter-pollution / https://github.com/parameter-pollution/
+      */
 
        // standard global variables
       var container, scene, camera, renderer, clock, controls, stats, projector;
@@ -51,10 +57,9 @@
 
       var crosshairTrackingPoint=new THREE.Vector3(25,25,25);
 
-      var crosshair_checkbox = document.getElementById("cross_check");
-
       var randomPointInterval;
 
+      var earthTexture;
 
       if(!Detector.webgl){  //check for webgl support
         Detector.addGetWebGLMessage(); //Tell the user that his browser doesn't support webgl
@@ -89,9 +94,7 @@
         // add the camera to the scene
         scene.add(camera);   
    
-        orbit=new myOrbit( camera, middle_earth, 500, clock );
-        orbit.autoRotate=true;
-    
+        orbit=new myOrbit( camera, middle_earth, 500, clock );    
           
         // create renderer
         renderer = new THREE.WebGLRenderer( {antialias:true} );
@@ -132,10 +135,12 @@
         }
 
         scene.add(earth);
+
+        renderer.initWebGLObjects( scene );
        
         projector = new THREE.Projector();
 
-        orbit.tween_to_orbit( { distance: 200}, 4000 );
+        orbit.tween_to_orbit( { distance: 200}, 4000, TWEEN.Easing.Exponential.Out );
 
         randomPointInterval = setInterval( generateRandomTrackingPoint , 2000);
 
@@ -173,7 +178,6 @@
 
         var intersects = raycaster.intersectObject( earth );
 
-       
         if ( intersects.length > 0 ) { //bazinga, we found an intersection point
           orbit.fixAzimuth();
           orbit.autoRotate=false;
@@ -183,14 +187,14 @@
 
           var spherical=orbit.convertCartesionToSpherical( intersects[0].point );
    
-          orbit.tween_to_orbit(spherical, 3000, function(){ 
-            orbit.spherical.azimuth=0;
-            orbit.spherical.inclination=Math.PI/2;
-            orbit.spherical.distance=500;
-            orbit.autoRotate=true;
+          orbit.tween_to_orbit(spherical, 3000, TWEEN.Easing.Cubic.InOut, function(){ 
+            orbit.reset();
+           
             hud.updateTrackingPoint(new THREE.Vector3(0,0,0));
-            randomPointInterval = setInterval( generateRandomTrackingPoint , 2000);
-            orbit.tween_to_orbit( { distance: 200}, 4000 );
+            randomPointInterval = setInterval( generateRandomTrackingPoint , 2000);             
+            setTimeout( function(){
+              orbit.tween_to_orbit( { distance: 200}, 3000, TWEEN.Easing.Exponential.Out)
+            }, 50); 
           });
          
         }
@@ -218,6 +222,17 @@
         return Math.random() * (max - min) + min;
       }
      
+    </script>
+
+    <script type="text/javascript">
+      var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+      document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+    </script>
+    <script type="text/javascript">
+      try {
+        var pageTracker = _gat._getTracker("UA-42384097-1");
+      pageTracker._trackPageview();
+      } catch(err) {}
     </script>
 
   </body>
