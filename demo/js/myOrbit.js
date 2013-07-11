@@ -39,7 +39,7 @@ myOrbit = function ( camera, center, distance, clock ) {
 		if( this.spherical.azimuth < 0 ){ this.spherical.azimuth = 2*Math.PI + this.spherical.azimuth; }	
 	}
 
-	this.tween_to_orbit = function( targetOrbit, duration){
+	this.tween_to_orbit = function( targetOrbit, duration, callback){
 
 	    if( this.spherical.azimuth - targetOrbit.azimuth > Math.PI ){
 	      targetOrbit.azimuth+=2*Math.PI;
@@ -48,6 +48,9 @@ myOrbit = function ( camera, center, distance, clock ) {
 	    }
 	    var position_tween = new TWEEN.Tween(this.spherical).to( targetOrbit, duration);
 	    position_tween.easing(TWEEN.Easing.Cubic.InOut);
+	    if( typeof callback !== "undefined" ){
+	    	position_tween.onComplete( callback );
+	    }
 
 	    position_tween.start();
     }

@@ -45,7 +45,7 @@ myHUD = function ( camera, distance ) {
 			this.tracker.position.x=vector.x;
 			this.tracker.position.y=vector.y;
         }else{
-          console.log("no intersection point with HUD plane, WTF???");
+          //console.log("no intersection point with HUD plane, WTF???");
         }
 	}
 
