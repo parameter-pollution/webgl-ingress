@@ -1,260 +1,89 @@
-<!DOCTYPE HTML>
-<html lang="en">
+<!DOCTYPE html>
+<html>
+
   <head>
-    <title>WebGL Globe</title>
-    <meta charset="utf-8">
-    <style type="text/css">
-      html {
-        height: 100%;
-      }
-      body {
-        margin: 0;
-        padding: 0;
-        color: #FFFFFF;
-        background-color: #000000;        
-        height: 100%;
-      }
-      #animation_controller{
-        position: absolute;
-        bottom: 0px;
-        right: 0px;
-        z-index: 100;
-      }
-       </style>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="description" content="Webgl-ingress : ingress boot animation in webgl" />
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Webgl-ingress</title>
   </head>
+
   <body>
 
-  <div id="universe"></div>
-<!--  <div id="animation_controller">
-    <button onclick="run_animation=true; animate();">Start</button>
-    <button onclick="run_animation=false;">Pause</button>
-    crosshair:<input type="checkbox" checked="checked" id="cross_check">
-    autorotate:<input type="checkbox" checked="checked" onclick="orbit.autoRotate = this.checked;">
-  </div>-->
-  
-  <script type="text/javascript" src="js/Detector.js"></script>
-  <script type="text/javascript" src="js/three.js"></script>
-  <script type="text/javascript" src="js/stats.js"></script>
-  <script type="text/javascript" src="js/Tween.js"></script>
-  <script type="text/javascript" src="js/myOrbit.js"></script>
-  <script type="text/javascript" src="js/myHUD.js"></script>
-  <script type="text/javascript">
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/parameter-pollution/webgl-ingress">View on GitHub</a>
 
-     // standard global variables
-    var container, scene, camera, renderer, clock, controls, stats, projector;
-    var SCREEN_WIDTH, SCREEN_HEIGHT;
+          <h1 id="project_title">Webgl-ingress</h1>
+          <h2 id="project_tagline">ingress boot animation in webgl</h2>
 
-    // custom global variables
-    var middle_earth={x:0,y:0,z:0};
-    var orbit;
-     
-    var earth;
-    var earth_radius=50;
-    var layers= new Array(10);
-    var layer_distance=0.005;
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/parameter-pollution/webgl-ingress/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/parameter-pollution/webgl-ingress/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
 
-    var hud;
-    var hud_distance=30;
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h3>
+<a name="welcome-to-github-pages" class="anchor" href="#welcome-to-github-pages"><span class="octicon octicon-link"></span></a>Welcome to GitHub Pages.</h3>
 
-   
-    var crosshairTrackingPoint=new THREE.Vector3(25,25,25);
+<p>This automatic page generator is the easiest way to create beautiful pages for all of your projects. Author your page content here using GitHub Flavored Markdown, select a template crafted by a designer, and publish. After your page is generated, you can check out the new branch:</p>
 
+<pre><code>$ cd your_repo_root/repo_name
+$ git fetch origin
+$ git checkout gh-pages
+</code></pre>
 
-    var run_animation=true;
-    var crosshair_checkbox = document.getElementById("cross_check");
+<p>If you're using the GitHub for Mac, simply sync your repository and you'll see the new branch.</p>
 
-    var randomPointInterval;
+<h3>
+<a name="designer-templates" class="anchor" href="#designer-templates"><span class="octicon octicon-link"></span></a>Designer Templates</h3>
 
+<p>We've crafted some handsome templates for you to use. Go ahead and continue to layouts to browse through them. You can easily go back to edit your page before publishing. After publishing your page, you can revisit the page generator and switch to another theme. Your Page content will be preserved if it remained markdown format.</p>
 
-    if(!Detector.webgl){  //check for webgl support
-      Detector.addGetWebGLMessage(); //Tell the user that his browser doesn't support webgl
-    } else { //let's get this party started ;-)
- 
-      // initialization
-      init();
+<h3>
+<a name="rather-drive-stick" class="anchor" href="#rather-drive-stick"><span class="octicon octicon-link"></span></a>Rather Drive Stick?</h3>
 
-      animate(); 
-    }
+<p>If you prefer to not use the automatic generator, push a branch named <code>gh-pages</code> to your repository to create a page manually. In addition to supporting regular HTML content, GitHub Pages support Jekyll, a simple, blog aware static site generator written by our own Tom Preston-Werner. Jekyll makes it easy to create site-wide headers and footers without having to copy them across every page. It also offers intelligent blog support and other advanced templating features.</p>
 
-    function init()
-    {
+<h3>
+<a name="authors-and-contributors" class="anchor" href="#authors-and-contributors"><span class="octicon octicon-link"></span></a>Authors and Contributors</h3>
 
-      scene = new THREE.Scene();
+<p>You can <a href="https://github.com/blog/821" class="user-mention">@mention</a> a GitHub username to generate a link to their profile. The resulting <code>&lt;a&gt;</code> element will link to the contributor's GitHub Profile. For example: In 2007, Chris Wanstrath (<a href="https://github.com/defunkt" class="user-mention">@defunkt</a>), PJ Hyett (<a href="https://github.com/pjhyett" class="user-mention">@pjhyett</a>), and Tom Preston-Werner (<a href="https://github.com/mojombo" class="user-mention">@mojombo</a>) founded GitHub.</p>
 
-      //clock
-      clock = new THREE.Clock();
-            
-      // set the view size in pixels (custom or according to window size)
-      SCREEN_WIDTH = window.innerWidth;
-      SCREEN_HEIGHT = window.innerHeight; 
+<h3>
+<a name="support-or-contact" class="anchor" href="#support-or-contact"><span class="octicon octicon-link"></span></a>Support or Contact</h3>
 
-      // camera attributes
-      var VIEW_ANGLE = 45, ASPECT = SCREEN_WIDTH / SCREEN_HEIGHT, NEAR = 0.1, FAR = 20000;
-      // set up camera
-      camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR);
-      camera.up.set(0,0,1);
+<p>Having trouble with Pages? Check out the documentation at <a href="http://help.github.com/pages">http://help.github.com/pages</a> or contact <a href="mailto:support@github.com">support@github.com</a> and we’ll help you sort it out.</p>
+      </section>
+    </div>
 
-      //HUD
-      hud = new myHUD(camera,hud_distance);
-      
-      //crosshair
-      var crosshairGeometry = new THREE.PlaneGeometry( 40, 30 ); 
-      var crosshairMaterial = new THREE.MeshLambertMaterial( { map: THREE.ImageUtils.loadTexture('img/crosshair.png'), transparent:true, opacity:0.3 } ); 
-      crosshair = new THREE.Mesh(crosshairGeometry, crosshairMaterial);
-      
-      hud.addTracked(crosshair, crosshairTrackingPoint);
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Webgl-ingress maintained by <a href="https://github.com/parameter-pollution">parameter-pollution</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
 
-      // add the camera to the scene
-      scene.add(camera);   
+              <script type="text/javascript">
+            var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+            document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+          </script>
+          <script type="text/javascript">
+            try {
+              var pageTracker = _gat._getTracker("UA-42384097-1");
+            pageTracker._trackPageview();
+            } catch(err) {}
+          </script>
 
- 
-      orbit=new myOrbit( camera, middle_earth, 500, clock );
-      //orbit.autoRotateSpeed=0.01;
-      orbit.autoRotate=true;
-  
-        
-      // create and start the renderer; choose antialias setting.
-      renderer = new THREE.WebGLRenderer( {antialias:false} );
-      
-      renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
-      
-      // attach div element to variable to contain the renderer
-      container = document.getElementById( 'universe' );
-
-      
-      // attach renderer to the container div
-      container.appendChild( renderer.domElement );
-      
-      
-      // create a light
-      var ambientLight = new THREE.AmbientLight(0xFFFFFF);
-       scene.add(ambientLight);
-      
-
-      // sphere parameters: radius, segments along width, segments along height
-      var earthGeometry = new THREE.SphereGeometry( earth_radius, 64, 32 ); 
-      var earthMaterial = new THREE.MeshLambertMaterial( { map: THREE.ImageUtils.loadTexture('img/borders.jpg') } ); 
-      earth = new THREE.Mesh(earthGeometry, earthMaterial);
-      earth.rotation.set(Math.PI/2,0,0);
-      
-
-      // layers
-       var layerMaterial = new THREE.MeshLambertMaterial( { map: THREE.ImageUtils.loadTexture('img/layer.png'), transparent:true, opacity:0.1 } ); 
-      
-
-      //this function doesn't work when you start with adding layers with lower scale. but i have NO FUCKING IDEA why ^^
-      //if you decide to change it around and find yourself changing it back again increase this counter: 3
-      var scale=1+layer_distance*layers.length;
-      for (var i = 0; i < layers.length; i++) {
-        layers[i] = new THREE.Mesh(earthGeometry, layerMaterial);
-        layers[i].scale.set( scale, scale, scale  );
-       // console.log("scale: "+scale);
-        earth.add(layers[i]);
-        scale -= layer_distance;
-      }
-
-      scene.add(earth);
-
-      
-
-     
-      projector = new THREE.Projector();
-      document.addEventListener( 'mousedown', onDocumentMouseDown, false );
-      document.addEventListener( 'mouseup', onDocumentMouseUp, false );
-
-
-      orbit.tween_to_orbit( { distance: 200}, 4000 );
-
-      randomPointInterval = setInterval( generateRandomTrackingPoint , 2000);
-          
-      //debug_init();      
- 
-    }
-
-    function animate() 
-    {
-        if( run_animation ){ requestAnimationFrame( animate ) };
-        render();   
-    }
-
-    function render() 
-    { 
-      //debug
-      stats.update();
-
-      TWEEN.update();
-
-      orbit.update(); 
-
-      var check = document.getElementById("cross_check");
-      if( check.checked ) { hud.update(); }   
-          
-      renderer.clear();    
-      renderer.render( scene, orbit.camera );
-    }
-
-    function onDocumentMouseDown( event ) {
-
-        event.preventDefault();
-
-        var vector = new THREE.Vector3( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1, 0.5 );
-        projector.unprojectVector( vector, camera );
-
-        var raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
-
-        var intersects = raycaster.intersectObject( earth );
-
-       
-        if ( intersects.length > 0 ) { //bazinga, we found an intersection point
-          orbit.fixAzimuth();
-          orbit.autoRotate=false;
-
-          hud.updateTrackingPoint( new THREE.Vector3(intersects[0].point.x, intersects[0].point.y, intersects[0].point.z) );
-
-          var spher_cor = orbit.convertCartesionToSpherical(intersects[0].point);
-
-          var spherical=orbit.convertCartesionToSpherical( intersects[0].point );
-
-          window.clearInterval(randomPointInterval);
-    
-          orbit.tween_to_orbit(spher_cor, 3000);
-         
-        }
-    }
-
-    
-
-    function onDocumentMouseUp( event ) {}
-
-    function generateRandomTrackingPoint(){
-      var min_azimuth=orbit.spherical.azimuth-0.5;
-      var max_azimuth=min_azimuth+Math.PI/2;
-      var spherical={};
-      spherical.azimuth = getRandomNumber(min_azimuth,max_azimuth);
-      spherical.inclination = getRandomNumber( 0.4, Math.PI-0.4 );
-      spherical.distance = earth_radius;
-
-      var point=orbit.convertSphericalToCartesian(spherical);
-      hud.updateTrackingPoint(new THREE.Vector3(point.x, point.y, point.z));
-    }
-
-    function getRandomNumber(min, max) {
-      return Math.random() * (max - min) + min;
-    }
-
-    function debug_init(){
-      var axes = new THREE.AxisHelper(100);
-      scene.add( axes );
-
-      stats = new Stats();
-      stats.domElement.style.position = 'absolute';
-      stats.domElement.style.bottom = '0px';
-      stats.domElement.style.zIndex = 100;
-      container.appendChild( stats.domElement );
-    }
-
-  </script>
 
   </body>
-
 </html>
