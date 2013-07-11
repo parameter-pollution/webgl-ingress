@@ -1,0 +1,260 @@
+<!DOCTYPE HTML>
+<html lang="en">
+  <head>
+    <title>WebGL Globe</title>
+    <meta charset="utf-8">
+    <style type="text/css">
+      html {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        color: #FFFFFF;
+        background-color: #000000;        
+        height: 100%;
+      }
+      #animation_controller{
+        position: absolute;
+        bottom: 0px;
+        right: 0px;
+        z-index: 100;
+      }
+       </style>
+  </head>
+  <body>
+
+  <div id="universe"></div>
+<!--  <div id="animation_controller">
+    <button onclick="run_animation=true; animate();">Start</button>
+    <button onclick="run_animation=false;">Pause</button>
+    crosshair:<input type="checkbox" checked="checked" id="cross_check">
+    autorotate:<input type="checkbox" checked="checked" onclick="orbit.autoRotate = this.checked;">
+  </div>-->
+  
+  <script type="text/javascript" src="js/Detector.js"></script>
+  <script type="text/javascript" src="js/three.js"></script>
+  <script type="text/javascript" src="js/stats.js"></script>
+  <script type="text/javascript" src="js/Tween.js"></script>
+  <script type="text/javascript" src="js/myOrbit.js"></script>
+  <script type="text/javascript" src="js/myHUD.js"></script>
+  <script type="text/javascript">
+
+     // standard global variables
+    var container, scene, camera, renderer, clock, controls, stats, projector;
+    var SCREEN_WIDTH, SCREEN_HEIGHT;
+
+    // custom global variables
+    var middle_earth={x:0,y:0,z:0};
+    var orbit;
+     
+    var earth;
+    var earth_radius=50;
+    var layers= new Array(10);
+    var layer_distance=0.005;
+
+    var hud;
+    var hud_distance=30;
+
+   
+    var crosshairTrackingPoint=new THREE.Vector3(25,25,25);
+
+
+    var run_animation=true;
+    var crosshair_checkbox = document.getElementById("cross_check");
+
+    var randomPointInterval;
+
+
+    if(!Detector.webgl){  //check for webgl support
+      Detector.addGetWebGLMessage(); //Tell the user that his browser doesn't support webgl
+    } else { //let's get this party started ;-)
+ 
+      // initialization
+      init();
+
+      animate(); 
+    }
+
+    function init()
+    {
+
+      scene = new THREE.Scene();
+
+      //clock
+      clock = new THREE.Clock();
+            
+      // set the view size in pixels (custom or according to window size)
+      SCREEN_WIDTH = window.innerWidth;
+      SCREEN_HEIGHT = window.innerHeight; 
+
+      // camera attributes
+      var VIEW_ANGLE = 45, ASPECT = SCREEN_WIDTH / SCREEN_HEIGHT, NEAR = 0.1, FAR = 20000;
+      // set up camera
+      camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR);
+      camera.up.set(0,0,1);
+
+      //HUD
+      hud = new myHUD(camera,hud_distance);
+      
+      //crosshair
+      var crosshairGeometry = new THREE.PlaneGeometry( 40, 30 ); 
+      var crosshairMaterial = new THREE.MeshLambertMaterial( { map: THREE.ImageUtils.loadTexture('img/crosshair.png'), transparent:true, opacity:0.3 } ); 
+      crosshair = new THREE.Mesh(crosshairGeometry, crosshairMaterial);
+      
+      hud.addTracked(crosshair, crosshairTrackingPoint);
+
+      // add the camera to the scene
+      scene.add(camera);   
+
+ 
+      orbit=new myOrbit( camera, middle_earth, 500, clock );
+      //orbit.autoRotateSpeed=0.01;
+      orbit.autoRotate=true;
+  
+        
+      // create and start the renderer; choose antialias setting.
+      renderer = new THREE.WebGLRenderer( {antialias:false} );
+      
+      renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+      
+      // attach div element to variable to contain the renderer
+      container = document.getElementById( 'universe' );
+
+      
+      // attach renderer to the container div
+      container.appendChild( renderer.domElement );
+      
+      
+      // create a light
+      var ambientLight = new THREE.AmbientLight(0xFFFFFF);
+       scene.add(ambientLight);
+      
+
+      // sphere parameters: radius, segments along width, segments along height
+      var earthGeometry = new THREE.SphereGeometry( earth_radius, 64, 32 ); 
+      var earthMaterial = new THREE.MeshLambertMaterial( { map: THREE.ImageUtils.loadTexture('img/borders.jpg') } ); 
+      earth = new THREE.Mesh(earthGeometry, earthMaterial);
+      earth.rotation.set(Math.PI/2,0,0);
+      
+
+      // layers
+       var layerMaterial = new THREE.MeshLambertMaterial( { map: THREE.ImageUtils.loadTexture('img/layer.png'), transparent:true, opacity:0.1 } ); 
+      
+
+      //this function doesn't work when you start with adding layers with lower scale. but i have NO FUCKING IDEA why ^^
+      //if you decide to change it around and find yourself changing it back again increase this counter: 3
+      var scale=1+layer_distance*layers.length;
+      for (var i = 0; i < layers.length; i++) {
+        layers[i] = new THREE.Mesh(earthGeometry, layerMaterial);
+        layers[i].scale.set( scale, scale, scale  );
+       // console.log("scale: "+scale);
+        earth.add(layers[i]);
+        scale -= layer_distance;
+      }
+
+      scene.add(earth);
+
+      
+
+     
+      projector = new THREE.Projector();
+      document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+      document.addEventListener( 'mouseup', onDocumentMouseUp, false );
+
+
+      orbit.tween_to_orbit( { distance: 200}, 4000 );
+
+      randomPointInterval = setInterval( generateRandomTrackingPoint , 2000);
+          
+      //debug_init();      
+ 
+    }
+
+    function animate() 
+    {
+        if( run_animation ){ requestAnimationFrame( animate ) };
+        render();   
+    }
+
+    function render() 
+    { 
+      //debug
+      stats.update();
+
+      TWEEN.update();
+
+      orbit.update(); 
+
+      var check = document.getElementById("cross_check");
+      if( check.checked ) { hud.update(); }   
+          
+      renderer.clear();    
+      renderer.render( scene, orbit.camera );
+    }
+
+    function onDocumentMouseDown( event ) {
+
+        event.preventDefault();
+
+        var vector = new THREE.Vector3( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1, 0.5 );
+        projector.unprojectVector( vector, camera );
+
+        var raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+
+        var intersects = raycaster.intersectObject( earth );
+
+       
+        if ( intersects.length > 0 ) { //bazinga, we found an intersection point
+          orbit.fixAzimuth();
+          orbit.autoRotate=false;
+
+          hud.updateTrackingPoint( new THREE.Vector3(intersects[0].point.x, intersects[0].point.y, intersects[0].point.z) );
+
+          var spher_cor = orbit.convertCartesionToSpherical(intersects[0].point);
+
+          var spherical=orbit.convertCartesionToSpherical( intersects[0].point );
+
+          window.clearInterval(randomPointInterval);
+    
+          orbit.tween_to_orbit(spher_cor, 3000);
+         
+        }
+    }
+
+    
+
+    function onDocumentMouseUp( event ) {}
+
+    function generateRandomTrackingPoint(){
+      var min_azimuth=orbit.spherical.azimuth-0.5;
+      var max_azimuth=min_azimuth+Math.PI/2;
+      var spherical={};
+      spherical.azimuth = getRandomNumber(min_azimuth,max_azimuth);
+      spherical.inclination = getRandomNumber( 0.4, Math.PI-0.4 );
+      spherical.distance = earth_radius;
+
+      var point=orbit.convertSphericalToCartesian(spherical);
+      hud.updateTrackingPoint(new THREE.Vector3(point.x, point.y, point.z));
+    }
+
+    function getRandomNumber(min, max) {
+      return Math.random() * (max - min) + min;
+    }
+
+    function debug_init(){
+      var axes = new THREE.AxisHelper(100);
+      scene.add( axes );
+
+      stats = new Stats();
+      stats.domElement.style.position = 'absolute';
+      stats.domElement.style.bottom = '0px';
+      stats.domElement.style.zIndex = 100;
+      container.appendChild( stats.domElement );
+    }
+
+  </script>
+
+  </body>
+
+</html>
