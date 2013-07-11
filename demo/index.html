@@ -85,11 +85,9 @@
         numberOfTextures--;
         if( numberOfTextures === 0 ){ //all textures have been loaded, let's get this party started ;-)
           orbit.tween_to_orbit( { distance: 200}, 4000, TWEEN.Easing.Exponential.Out, function(){
-          aquiring_position.currentTime=0;
-          aquiring_position.play();
-          setTimeout( function(){
-              logon_established.currentTime=0;
-              logon_established.play();
+            playSound(aquiring_position);
+            setTimeout( function(){
+              playSound(logon_established);
             }, 2000);
           });
 
@@ -211,10 +209,9 @@
 
           var spherical=orbit.convertCartesionToSpherical( intersects[0].point );
           
-          zoom_sound.currentTime=0;
-          zoom_sound.play();
-          downloading_latest_intel_package.currentTime=0;
-          downloading_latest_intel_package.play();
+          playSound(zoom_sound);
+          playSound(downloading_latest_intel_package);
+
           orbit.tween_to_orbit(spherical, 3000, TWEEN.Easing.Cubic.InOut, function(){ 
             orbit.reset();
            
@@ -224,11 +221,9 @@
             //TODO: this timeout should not be necessary         
             setTimeout( function(){
               orbit.tween_to_orbit( { distance: 200}, 3000, TWEEN.Easing.Exponential.Out, function(){
-                aquiring_position.currentTime=0;
-                aquiring_position.play();
+                playSound(aquiring_position);
                 setTimeout( function(){
-                  logon_established.currentTime=0;
-                  logon_established.play();
+                  playSound(logon_established);
                 }, 2000);
               });
             }, 50); 
@@ -253,12 +248,17 @@
 
         var point=orbit.convertSphericalToCartesian(spherical);
         hud.updateTrackingPoint(new THREE.Vector3(point.x, point.y, point.z));
-        crosshair_locked.currentTime=0;
-        crosshair_locked.play();
+        playSound(crosshair_locked);
       }
 
       function getRandomNumber(min, max) {
         return Math.random() * (max - min) + min;
+      }
+
+      function playSound(sound){
+        sound.pause();
+        sound.currentTime=0;
+        sound.play();
       }
      
     </script>
