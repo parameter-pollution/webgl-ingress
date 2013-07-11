@@ -84,6 +84,16 @@
       function textureLoadComplete(){
         numberOfTextures--;
         if( numberOfTextures === 0 ){ //all textures have been loaded, let's get this party started ;-)
+          orbit.tween_to_orbit( { distance: 200}, 4000, TWEEN.Easing.Exponential.Out, function(){
+          aquiring_position.currentTime=0;
+          aquiring_position.play();
+          setTimeout( function(){
+              logon_established.currentTime=0;
+              logon_established.play();
+            }, 2000);
+          });
+
+        randomPointInterval = setInterval( generateRandomTrackingPoint , 2000);
           //start render loop
           animate();
         }     
@@ -156,17 +166,6 @@
         renderer.initWebGLObjects( scene );
        
         projector = new THREE.Projector();
-
-        orbit.tween_to_orbit( { distance: 200}, 4000, TWEEN.Easing.Exponential.Out, function(){
-          aquiring_position.currentTime=0;
-          aquiring_position.play();
-          setTimeout( function(){
-            logon_established.currentTime=0;
-            logon_established.play();
-          }, 2000);
-        });
-
-        randomPointInterval = setInterval( generateRandomTrackingPoint , 2000);
 
         document.addEventListener( 'mousedown', onDocumentMouseDown, false );
         window.addEventListener( 'resize', onWindowResize, false );          
