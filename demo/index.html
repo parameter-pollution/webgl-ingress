@@ -63,6 +63,22 @@
         from {  -webkit-transform:rotate(0deg); }
         to {  -webkit-transform:rotate(360deg); }
       }
+
+      #border_gradient{
+        position:absolute;
+        top:0px;
+        left:0px;
+        height:100%;
+        width:100%;
+      }
+      #click_notify{
+        position:absolute;
+        top:20%;
+        left:20%;
+        color: white;
+        font-size:2em;
+        display:none;
+      }
     </style>
     <script type="text/javascript" src="js/Detector.js"></script>
     <script type="text/javascript" src="js/three.js"></script>
@@ -79,7 +95,7 @@
 
       var tweenStyle={};
       tweenStyle.opacity=1;
-      var inner_wheel, outer_wheel;
+      var inner_wheel, outer_wheel, border_gradient, click_notify;
 
        // standard global variables
       var container, scene, camera, renderer, clock, controls, stats, projector;
@@ -119,6 +135,8 @@
 
         inner_wheel=document.getElementById('wheel_inner');
         outer_wheel= document.getElementById('wheel_outer');
+        border_gradient= document.getElementById('border_gradient');
+        click_notify=document.getElementById('click_notify');
 
         clock = new THREE.Clock();
 
@@ -134,11 +152,25 @@
         crosshairTrackingPoint=new THREE.Vector3(25,25,25);
         
         //crosshair
-        var crosshairGeometry = new THREE.PlaneGeometry( 40, 30 ); 
-        var crosshairMaterial = new THREE.MeshLambertMaterial( { map: THREE.ImageUtils.loadTexture('img/crosshair.png', null, textureLoadComplete), transparent:true, opacity:0.3 } ); 
+        var crosshairGeometry = new THREE.PlaneGeometry( 30, 30 ); 
+        var crosshairMaterial = new THREE.MeshLambertMaterial( { map: THREE.ImageUtils.loadTexture('img/crosshair.png', null, textureLoadComplete), transparent:true } ); 
         crosshair = new THREE.Mesh(crosshairGeometry, crosshairMaterial);
         hud.addTracked(crosshair, crosshairTrackingPoint);
 
+        //var ambientLight = new THREE.AmbientLight(0x101010,0.5);
+        //scene.add(ambientLight);
+
+         // spotlight
+        var spotlight = new THREE.SpotLight(0xffffff, 1.4);
+        spotlight.position.set(0,0,50);
+        spotlight.angle=Math.PI/6;
+        camera.add(spotlight);
+/*
+        var spotlight2 = new THREE.SpotLight(0xffffff, 1.5, 40);
+        spotlight2.position.set(0,0,30);
+        spotlight2.exponent=0;
+        camera.add(spotlight2);
+*/
         // add the camera to the scene
         scene.add(camera);   
    
@@ -153,13 +185,7 @@
 
         
         // attach renderer to the container div
-        container.appendChild( renderer.domElement );
-        
-        
-        // create a light
-        var ambientLight = new THREE.AmbientLight(0xFFFFFF);
-         scene.add(ambientLight);
-        
+        container.appendChild( renderer.domElement );       
 
         // sphere parameters: radius, segments along width, segments along height
         var earthGeometry = new THREE.SphereGeometry( earth_radius, 64, 32 ); 
@@ -169,7 +195,7 @@
         
 
         // layers
-        var layerMaterial = new THREE.MeshLambertMaterial( { map: THREE.ImageUtils.loadTexture('img/layer.png', null, textureLoadComplete), transparent:true, opacity:0.1 } ); 
+        var layerMaterial = new THREE.MeshLambertMaterial( { map: THREE.ImageUtils.loadTexture('img/layer.png', null, textureLoadComplete), transparent:true, opacity: 0.6 } ); 
         
 
         //this function doesn't work when you start with adding layers with lower scale. but i have NO FUCKING IDEA why ^^
@@ -212,6 +238,7 @@
             setTimeout( function(){
               playSound(sounds.logon_established);
             }, 2000);
+            setTimeout( function(){click_notify.style.display="inline";}, 5000);
           });
 
         randomPointInterval = setInterval( generateRandomTrackingPoint , 2000);
@@ -277,6 +304,9 @@
           playSound(sounds.zoom_sound);
           playSound(sounds.downloading_latest_intel_package);
 
+          click_notify.style.display="none"
+          border_gradient.style.display="none";
+
           orbit.tween_to_orbit(spherical, 3000, TWEEN.Easing.Cubic.InOut, function(){ 
             orbit.reset();
            
@@ -285,6 +315,7 @@
 
             //TODO: this timeout should not be necessary         
             setTimeout( function(){
+              border_gradient.style.display="inline";
               orbit.tween_to_orbit( { distance: 200}, 3000, TWEEN.Easing.Exponential.Out, function(){
                 playSound(sounds.aquiring_position);
                 setTimeout( function(){
@@ -346,6 +377,8 @@
 
     <img class="ada_wheel" id="wheel_outer" src="img/ada_wheel_outer.png">
     <img class="ada_wheel" id="wheel_inner" src="img/ada_wheel_inner.png">
+    <img id="border_gradient" src="img/border_gradient.png">
+    <div id="click_notify">click somewhere on the planet!</div>
     <div id="universe"></div>
     
     <script>
