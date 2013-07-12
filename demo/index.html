@@ -14,7 +14,7 @@
         overflow-y:hidden;
         overflow-x:hidden;
         height: 100%;
-        background: #000000 url("img/loading.gif") center center no-repeat;
+        background-color: #000000;
       }
       #universe{
         height: 100%;
@@ -23,17 +23,71 @@
         padding: 0;
         border: 0;
       }
+      #wheel_outer{
+        position:absolute;
+        top: 50%;
+        left: 50%;
+        height: 396px;
+        width: 396px;
+        margin-top: -198px;
+        margin-left: -198px;
+        animation-name: rotateLeft;
+        animation-duration: 10s;
+        animation-iteration-count: infinite;
+        animation-timing-function: linear;
+        -webkit-animation-name: rotateLeft;
+        -webkit-animation-duration: 10s;
+        -webkit-animation-iteration-count: infinite;
+        -webkit-animation-timing-function: linear;
+      }
+      @keyframes rotateLeft{
+        from {  transform:rotate(360deg); }
+        to {  transform:rotate(0deg); }
+      }
+      @-webkit-keyframes rotateLeft{
+        from {  -webkit-transform:rotate(360deg); }
+        to {  -webkit-transform:rotate(0deg); }
+      }
+
+      #wheel_inner{
+        position:absolute;
+        top: 50%;
+        left: 50%;
+        height: 396px;
+        width: 396px;
+        margin-top: -198px;
+        margin-left: -198px;
+        animation-name: rotateRight;
+        animation-duration: 10s;
+        animation-iteration-count: infinite;
+        animation-timing-function: linear;
+        -webkit-animation-name: rotateRight;
+        -webkit-animation-duration: 10s;
+        -webkit-animation-iteration-count: infinite;
+        -webkit-animation-timing-function: linear;
+      }
+      @keyframes rotateRight{
+        from {  transform:rotate(0deg); }
+        to {  transform:rotate(360deg); }
+      }
+      @-webkit-keyframes rotateRight{
+        from {  -webkit-transform:rotate(0deg); }
+        to {  -webkit-transform:rotate(360deg); }
+      }
     </style>
   </head>
   <body>
-
+    <img id="wheel_outer" src="img/ada_wheel_outer.png">
+    <img id="wheel_inner" src="img/ada_wheel_inner.png">
     <div id="universe"></div>
+
+
     <audio id="aquiring_position" preload="auto" src="sounds/acquiring_position.ogg"></audio> 
     <audio id="crosshair_locked" preload="auto" src="sounds/crosshair_locked.ogg"></audio> 
     <audio id="logon_established" preload="auto" src="sounds/logon_established.ogg"></audio> 
     <audio id="zoom_sound" preload="auto" src="sounds/zoom_sound.ogg"></audio> 
     <audio id="downloading_latest_intel_package" preload="auto" src="sounds/downloading_latest_intel_package.ogg"></audio> 
-    <!--logon_established-->
+    <audio id="ambient_space" preload="auto" loop src="sounds/ambient_space.ogg"></audio> 
     
     <script type="text/javascript" src="js/Detector.js"></script>
     <script type="text/javascript" src="js/three.js"></script>
@@ -52,9 +106,17 @@
       var logon_established=document.getElementById('logon_established');
       var zoom_sound=document.getElementById('zoom_sound');
       var downloading_latest_intel_package=document.getElementById('downloading_latest_intel_package');
+      var ambient_space=document.getElementById('ambient_space');
+
+      var tweenStyle={};
+      tweenStyle.opacity=1;
+      var inner_wheel=document.getElementById('wheel_inner');
+      var outer_wheel= document.getElementById('wheel_outer');
 
        // standard global variables
       var container, scene, camera, renderer, clock, controls, stats, projector;
+
+      clock = new THREE.Clock();
 
       // custom global variables
       var middle_earth={x:0,y:0,z:0};
@@ -76,7 +138,8 @@
 
       if(!Detector.webgl){  //check for webgl support
         Detector.addGetWebGLMessage(); //Tell the user that his browser doesn't support webgl
-      } else {    
+      } else {
+        clock.getDelta(); //reset clock delta    
         // initialization
         init();
       }
@@ -84,8 +147,21 @@
       function textureLoadComplete(){
         numberOfTextures--;
         if( numberOfTextures === 0 ){ //all textures have been loaded, let's get this party started ;-)
+          var delta=clock.getDelta();
+          if( delta < 3000 ){ //make sure people with google fiber can also appreciate the loading animation ;-)
+            setTimeout( function(){startAnimation()}, 3000-delta);
+          }else{
+            startAnimation();
+          }
+          
+        }     
+      }
+
+      function startAnimation(){
+        fadeOutLoading();
           orbit.tween_to_orbit( { distance: 200}, 4000, TWEEN.Easing.Exponential.Out, function(){
             playSound(aquiring_position);
+            playSound(ambient_space);
             setTimeout( function(){
               playSound(logon_established);
             }, 2000);
@@ -94,15 +170,28 @@
         randomPointInterval = setInterval( generateRandomTrackingPoint , 2000);
           //start render loop
           animate();
-        }     
+      }
+
+      function fadeOutLoading(){
+
+        var fadeOutTween=new TWEEN.Tween(tweenStyle).to( {opacity: 0}, 4000);
+        fadeOutTween.easing(TWEEN.Easing.Cubic.In);
+        fadeOutTween.onUpdate(function(){
+          inner_wheel.style.opacity=tweenStyle.opacity;
+          outer_wheel.style.opacity=tweenStyle.opacity;
+        });
+        fadeOutTween.onComplete(function(){
+          inner_wheel.style.display="none";
+          outer_wheel.style.display="none";
+        });
+        fadeOutTween.start();
       }
 
       function init()
       {
 
         scene = new THREE.Scene();
-        clock = new THREE.Clock();
-              
+
         // set up camera
         camera = new THREE.PerspectiveCamera( 45, window.innerWidth/window.innerHeight, 0.1, 2000);
         camera.up.set(0,0,1);
@@ -218,10 +307,13 @@
             hud.updateTrackingPoint(new THREE.Vector3(0,0,0));
             if( randomPointInterval === null ) { randomPointInterval = setInterval( generateRandomTrackingPoint , 2000); };
 
+            ambient_space.pause();
+
             //TODO: this timeout should not be necessary         
             setTimeout( function(){
               orbit.tween_to_orbit( { distance: 200}, 3000, TWEEN.Easing.Exponential.Out, function(){
                 playSound(aquiring_position);
+                playSound(ambient_space);
                 setTimeout( function(){
                   playSound(logon_established);
                 }, 2000);
@@ -246,9 +338,10 @@
         spherical.inclination = getRandomNumber( 0.4, Math.PI-0.4 );
         spherical.distance = earth_radius;
 
+        playSound(crosshair_locked);
+
         var point=orbit.convertSphericalToCartesian(spherical);
         hud.updateTrackingPoint(new THREE.Vector3(point.x, point.y, point.z));
-        playSound(crosshair_locked);
       }
 
       function getRandomNumber(min, max) {
