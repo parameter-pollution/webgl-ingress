@@ -1,5 +1,10 @@
-//TODO: allow multiple trackers in one hud???
+/*
+@coder paremeter-pollution / https://github.com/parameter-pollution/
 
+TODO: 
+  	--allow multiple trackers in one hud???
+	--update hud plane when camera/renderer settings are changed
+*/
 myHUD = function ( camera, distance ) {
 
 	this.camera = camera;
@@ -45,7 +50,9 @@ myHUD = function ( camera, distance ) {
 			this.tracker.position.x=vector.x;
 			this.tracker.position.y=vector.y;
         }else{
-          console.log("no intersection point with HUD plane, WTF???");
+          this.tracker.position.x=0;
+          this.tracker.position.y=0;
+          //console.log("no intersection point with HUD plane, WTF???");
         }
 	}
 

@@ -1,199 +1,286 @@
 <!DOCTYPE HTML>
 <html lang="en">
   <head>
-    <title>WebGL Globe</title>
+    <title>Ingress WebGL</title>
     <meta charset="utf-8">
     <style type="text/css">
-      html {
+      html{
         height: 100%;
       }
       body {
         margin: 0;
         padding: 0;
-        color: #FFFFFF;
-        background-color: #000000;        
+        border: 0;
+        overflow-y:hidden;
+        overflow-x:hidden;
         height: 100%;
+        background-color: #000000;
       }
-      #animation_controller{
-        position: absolute;
-        bottom: 0px;
-        right: 0px;
-        z-index: 100;
+      #universe{
+        height: 100%;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        border: 0;
       }
-       </style>
-  </head>
-  <body>
+      .ada_wheel{
+        position:absolute;
+        top: 50%;
+        left: 50%;
+        height: 396px;
+        width: 396px;
+        margin-top: -198px;
+        margin-left: -198px;
+        animation-duration: 10s;
+        animation-iteration-count: infinite;
+        animation-timing-function: linear;
+        -webkit-animation-duration: 10s;
+        -webkit-animation-iteration-count: infinite;
+        -webkit-animation-timing-function: linear;
+      }
+      #wheel_outer{
+        animation-name: rotateLeft;
+        -webkit-animation-name: rotateLeft;
+      }
+      @keyframes rotateLeft{
+        from {  transform:rotate(360deg); }
+        to {  transform:rotate(0deg); }
+      }
+      @-webkit-keyframes rotateLeft{
+        from {  -webkit-transform:rotate(360deg); }
+        to {  -webkit-transform:rotate(0deg); }
+      }
 
-  <div id="universe"></div>
-<!--  <div id="animation_controller">
-    <button onclick="run_animation=true; animate();">Start</button>
-    <button onclick="run_animation=false;">Pause</button>
-    crosshair:<input type="checkbox" checked="checked" id="cross_check">
-    autorotate:<input type="checkbox" checked="checked" onclick="orbit.autoRotate = this.checked;">
-  </div>-->
-  
-  <script type="text/javascript" src="js/Detector.js"></script>
-  <script type="text/javascript" src="js/three.js"></script>
-  <script type="text/javascript" src="js/stats.js"></script>
-  <script type="text/javascript" src="js/Tween.js"></script>
-  <script type="text/javascript" src="js/myOrbit.js"></script>
-  <script type="text/javascript" src="js/myHUD.js"></script>
-  <script type="text/javascript">
+      #wheel_inner{
+        animation-name: rotateRight;
+        -webkit-animation-name: rotateRight;
+      }
+      @keyframes rotateRight{
+        from {  transform:rotate(0deg); }
+        to {  transform:rotate(360deg); }
+      }
+      @-webkit-keyframes rotateRight{
+        from {  -webkit-transform:rotate(0deg); }
+        to {  -webkit-transform:rotate(360deg); }
+      }
 
-     // standard global variables
-    var container, scene, camera, renderer, clock, controls, stats, projector;
-    var SCREEN_WIDTH, SCREEN_HEIGHT;
+      #border_gradient{
+        position:absolute;
+        top:0px;
+        left:0px;
+        height:100%;
+        width:100%;
+      }
+      #click_notify{
+        position:absolute;
+        top:20%;
+        left:20%;
+        color: white;
+        font-size:2em;
+        display:none;
+      }
+    </style>
+    <script type="text/javascript" src="js/Detector.js"></script>
+    <script type="text/javascript" src="js/three.js"></script>
+    <script type="text/javascript" src="js/Tween.js"></script>
+    <script type="text/javascript" src="js/myOrbit.js"></script>
+    <script type="text/javascript" src="js/myHUD.js"></script>
+    <script type="text/javascript">
+      /*
+        @coder paremeter-pollution / https://github.com/parameter-pollution/
+      */
 
-    // custom global variables
-    var middle_earth={x:0,y:0,z:0};
-    var orbit;
+      //audio controls:
+      var sounds={};
+
+      var tweenStyle={};
+      tweenStyle.opacity=1;
+      var inner_wheel, outer_wheel, border_gradient, click_notify;
+
+       // standard global variables
+      var container, scene, camera, renderer, clock, controls, stats, projector;
+
      
-    var earth;
-    var earth_radius=50;
-    var layers= new Array(10);
-    var layer_distance=0.005;
+      // custom global variables
+      var middle_earth={x:0,y:0,z:0};
+      var orbit;
+       
+      var earth;
+      var earth_radius=50;
+      var layers= new Array(10);
+      var layer_distance=0.005;
 
-    var hud;
-    var hud_distance=30;
+      var hud;
+      var hud_distance=30;
 
-   
-    var crosshairTrackingPoint=new THREE.Vector3(25,25,25);
+      var crosshairTrackingPoint;
 
+      var randomPointInterval;
 
-    var run_animation=true;
-    var crosshair_checkbox = document.getElementById("cross_check");
+      var numberOfTextures=3;
+     
+      function init()
+      {
+        if(!Detector.webgl){  //check for webgl support
+          Detector.addGetWebGLMessage(); //Tell the user that his browser doesn't support webgl
+          return;
+        }
 
-    var randomPointInterval;
+        sounds.aquiring_position=document.getElementById('aquiring_position');
+        sounds.crosshair_locked=document.getElementById('crosshair_locked');
+        sounds.logon_established=document.getElementById('logon_established');
+        sounds.zoom_sound=document.getElementById('zoom_sound');
+        sounds.downloading_latest_intel_package=document.getElementById('downloading_latest_intel_package');
+        sounds.ambient_space=document.getElementById('ambient_space');
 
+        inner_wheel=document.getElementById('wheel_inner');
+        outer_wheel= document.getElementById('wheel_outer');
+        border_gradient= document.getElementById('border_gradient');
+        click_notify=document.getElementById('click_notify');
 
-    if(!Detector.webgl){  //check for webgl support
-      Detector.addGetWebGLMessage(); //Tell the user that his browser doesn't support webgl
-    } else { //let's get this party started ;-)
- 
-      // initialization
-      init();
+        clock = new THREE.Clock();
 
-      animate(); 
-    }
+        scene = new THREE.Scene();
 
-    function init()
-    {
+        // set up camera
+        camera = new THREE.PerspectiveCamera( 45, window.innerWidth/window.innerHeight, 0.1, 2000);
+        camera.up.set(0,0,1);
 
-      scene = new THREE.Scene();
+        //HUD
+        hud = new myHUD(camera,hud_distance);
 
-      //clock
-      clock = new THREE.Clock();
-            
-      // set the view size in pixels (custom or according to window size)
-      SCREEN_WIDTH = window.innerWidth;
-      SCREEN_HEIGHT = window.innerHeight; 
-
-      // camera attributes
-      var VIEW_ANGLE = 45, ASPECT = SCREEN_WIDTH / SCREEN_HEIGHT, NEAR = 0.1, FAR = 20000;
-      // set up camera
-      camera = new THREE.PerspectiveCamera( VIEW_ANGLE, ASPECT, NEAR, FAR);
-      camera.up.set(0,0,1);
-
-      //HUD
-      hud = new myHUD(camera,hud_distance);
-      
-      //crosshair
-      var crosshairGeometry = new THREE.PlaneGeometry( 40, 30 ); 
-      var crosshairMaterial = new THREE.MeshLambertMaterial( { map: THREE.ImageUtils.loadTexture('img/crosshair.png'), transparent:true, opacity:0.3 } ); 
-      crosshair = new THREE.Mesh(crosshairGeometry, crosshairMaterial);
-      
-      hud.addTracked(crosshair, crosshairTrackingPoint);
-
-      // add the camera to the scene
-      scene.add(camera);   
-
- 
-      orbit=new myOrbit( camera, middle_earth, 500, clock );
-      //orbit.autoRotateSpeed=0.01;
-      orbit.autoRotate=true;
-  
+        crosshairTrackingPoint=new THREE.Vector3(25,25,25);
         
-      // create and start the renderer; choose antialias setting.
-      renderer = new THREE.WebGLRenderer( {antialias:false} );
-      
-      renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
-      
-      // attach div element to variable to contain the renderer
-      container = document.getElementById( 'universe' );
+        //crosshair
+        var crosshairGeometry = new THREE.PlaneGeometry( 30, 30 ); 
+        var crosshairMaterial = new THREE.MeshLambertMaterial( { map: THREE.ImageUtils.loadTexture('img/crosshair.png', null, textureLoadComplete), transparent:true } ); 
+        crosshair = new THREE.Mesh(crosshairGeometry, crosshairMaterial);
+        hud.addTracked(crosshair, crosshairTrackingPoint);
 
-      
-      // attach renderer to the container div
-      container.appendChild( renderer.domElement );
-      
-      
-      // create a light
-      var ambientLight = new THREE.AmbientLight(0xFFFFFF);
-       scene.add(ambientLight);
-      
+        //var ambientLight = new THREE.AmbientLight(0x101010,0.5);
+        //scene.add(ambientLight);
 
-      // sphere parameters: radius, segments along width, segments along height
-      var earthGeometry = new THREE.SphereGeometry( earth_radius, 64, 32 ); 
-      var earthMaterial = new THREE.MeshLambertMaterial( { map: THREE.ImageUtils.loadTexture('img/borders.jpg') } ); 
-      earth = new THREE.Mesh(earthGeometry, earthMaterial);
-      earth.rotation.set(Math.PI/2,0,0);
-      
+         // spotlight
+        var spotlight = new THREE.SpotLight(0xffffff, 1.4);
+        spotlight.position.set(0,0,50);
+        spotlight.angle=Math.PI/6;
+        camera.add(spotlight);
+/*
+        var spotlight2 = new THREE.SpotLight(0xffffff, 1.5, 40);
+        spotlight2.position.set(0,0,30);
+        spotlight2.exponent=0;
+        camera.add(spotlight2);
+*/
+        // add the camera to the scene
+        scene.add(camera);   
+   
+        orbit=new myOrbit( camera, middle_earth, 500, clock );    
+          
+        // create renderer
+        renderer = new THREE.WebGLRenderer( {antialias:true} );
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        
+        // render container
+        container = document.getElementById( 'universe' );
 
-      // layers
-       var layerMaterial = new THREE.MeshLambertMaterial( { map: THREE.ImageUtils.loadTexture('img/layer.png'), transparent:true, opacity:0.1 } ); 
-      
+        
+        // attach renderer to the container div
+        container.appendChild( renderer.domElement );       
 
-      //this function doesn't work when you start with adding layers with lower scale. but i have NO FUCKING IDEA why ^^
-      //if you decide to change it around and find yourself changing it back again increase this counter: 3
-      var scale=1+layer_distance*layers.length;
-      for (var i = 0; i < layers.length; i++) {
-        layers[i] = new THREE.Mesh(earthGeometry, layerMaterial);
-        layers[i].scale.set( scale, scale, scale  );
-       // console.log("scale: "+scale);
-        earth.add(layers[i]);
-        scale -= layer_distance;
+        // sphere parameters: radius, segments along width, segments along height
+        var earthGeometry = new THREE.SphereGeometry( earth_radius, 64, 32 ); 
+        var earthMaterial = new THREE.MeshLambertMaterial( { map: THREE.ImageUtils.loadTexture('img/borders.jpg', null, textureLoadComplete) } ); 
+        earth = new THREE.Mesh(earthGeometry, earthMaterial);
+        earth.rotation.set(Math.PI/2,0,0);
+        
+
+        // layers
+        var layerMaterial = new THREE.MeshLambertMaterial( { map: THREE.ImageUtils.loadTexture('img/layer.png', null, textureLoadComplete), transparent:true, opacity: 0.6 } ); 
+        
+
+        //this function doesn't work when you start with adding layers with lower scale. but i have NO FUCKING IDEA why ^^
+        //if you decide to change it around and find yourself changing it back again increase this counter: 3
+        var scale=1+layer_distance*layers.length;
+        for (var i = 0; i < layers.length; i++) {
+          layers[i] = new THREE.Mesh(earthGeometry, layerMaterial);
+          layers[i].scale.set( scale, scale, scale  );
+          earth.add(layers[i]);
+          scale -= layer_distance;
+        }
+
+        scene.add(earth);
+
+        renderer.initWebGLObjects( scene );
+       
+        projector = new THREE.Projector();
+
+        document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+        window.addEventListener( 'resize', onWindowResize, false );          
       }
 
-      scene.add(earth);
-
-      
-
-     
-      projector = new THREE.Projector();
-      document.addEventListener( 'mousedown', onDocumentMouseDown, false );
-      document.addEventListener( 'mouseup', onDocumentMouseUp, false );
-
-
-      orbit.tween_to_orbit( { distance: 200}, 4000 );
-
-      randomPointInterval = setInterval( generateRandomTrackingPoint , 2000);
+      function textureLoadComplete(){
+        numberOfTextures--;
+        if( numberOfTextures === 0 ){ //all textures have been loaded, let's get this party started ;-)
+          var delta=clock.getDelta();
+          if( delta < 3000 ){ //make sure people with google fiber can also appreciate the loading animation ;-)
+            setTimeout( function(){startAnimation()}, 3000-delta);
+          }else{
+            startAnimation();
+          }
           
-      //debug_init();      
- 
-    }
+        }     
+      }
 
-    function animate() 
-    {
-        if( run_animation ){ requestAnimationFrame( animate ) };
-        render();   
-    }
+      function startAnimation(){
+        fadeOutLoading();
+          orbit.tween_to_orbit( { distance: 200}, 4000, TWEEN.Easing.Exponential.Out, function(){
+            playSound(sounds.aquiring_position);
+            setTimeout( function(){
+              playSound(sounds.logon_established);
+            }, 2000);
+            setTimeout( function(){click_notify.style.display="inline";}, 5000);
+          });
 
-    function render() 
-    { 
-      //debug
-      stats.update();
+        randomPointInterval = setInterval( generateRandomTrackingPoint , 2000);
+        //start render loop
+        animate();
+      }
 
-      TWEEN.update();
+      function fadeOutLoading(){
 
-      orbit.update(); 
+        var fadeOutTween=new TWEEN.Tween(tweenStyle).to( {opacity: 0}, 4000);
+        fadeOutTween.easing(TWEEN.Easing.Cubic.In);
+        fadeOutTween.onUpdate(function(){
+          inner_wheel.style.opacity=tweenStyle.opacity;
+          outer_wheel.style.opacity=tweenStyle.opacity;
+        });
+        fadeOutTween.onComplete(function(){
+          inner_wheel.style.display="none";
+          outer_wheel.style.display="none";
+        });
+        fadeOutTween.start();
+      }
 
-      var check = document.getElementById("cross_check");
-      if( check.checked ) { hud.update(); }   
-          
-      renderer.clear();    
-      renderer.render( scene, orbit.camera );
-    }
+      function animate() 
+      {
+          requestAnimationFrame( animate );
+          render();   
+      }
 
-    function onDocumentMouseDown( event ) {
+      function render() 
+      { 
+        
+        TWEEN.update();
+
+        orbit.update(); 
+
+        hud.update();
+            
+        renderer.clear();    
+        renderer.render( scene, orbit.camera );
+      }
+
+      function onDocumentMouseDown( event ) {
 
         event.preventDefault();
 
@@ -204,57 +291,105 @@
 
         var intersects = raycaster.intersectObject( earth );
 
-       
         if ( intersects.length > 0 ) { //bazinga, we found an intersection point
           orbit.fixAzimuth();
           orbit.autoRotate=false;
+          window.clearInterval(randomPointInterval);
+          randomPointInterval=null;
 
           hud.updateTrackingPoint( new THREE.Vector3(intersects[0].point.x, intersects[0].point.y, intersects[0].point.z) );
 
-          var spher_cor = orbit.convertCartesionToSpherical(intersects[0].point);
-
           var spherical=orbit.convertCartesionToSpherical( intersects[0].point );
+          
+          playSound(sounds.zoom_sound);
+          playSound(sounds.downloading_latest_intel_package);
 
-          window.clearInterval(randomPointInterval);
-    
-          orbit.tween_to_orbit(spher_cor, 3000);
+          click_notify.style.display="none"
+          border_gradient.style.display="none";
+
+          orbit.tween_to_orbit(spherical, 3000, TWEEN.Easing.Cubic.InOut, function(){ 
+            orbit.reset();
+           
+            hud.updateTrackingPoint(new THREE.Vector3(0,0,0));
+            if( randomPointInterval === null ) { randomPointInterval = setInterval( generateRandomTrackingPoint , 2000); };
+
+            //TODO: this timeout should not be necessary         
+            setTimeout( function(){
+              border_gradient.style.display="inline";
+              orbit.tween_to_orbit( { distance: 200}, 3000, TWEEN.Easing.Exponential.Out, function(){
+                playSound(sounds.aquiring_position);
+                setTimeout( function(){
+                  playSound(sounds.logon_established);
+                }, 2000);
+              });
+            }, 50); 
+          });
          
         }
-    }
+      }
 
+      function onWindowResize( event ) {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize( window.innerWidth, window.innerHeight );
+      }
+
+      function generateRandomTrackingPoint(){
+        var min_azimuth=orbit.spherical.azimuth-0.5;
+        var max_azimuth=min_azimuth+Math.PI/2;
+        var spherical={};
+        spherical.azimuth = getRandomNumber(min_azimuth,max_azimuth);
+        spherical.inclination = getRandomNumber( 0.4, Math.PI-0.4 );
+        spherical.distance = earth_radius;
+
+        playSound(crosshair_locked);
+
+        var point=orbit.convertSphericalToCartesian(spherical);
+        hud.updateTrackingPoint(new THREE.Vector3(point.x, point.y, point.z));
+      }
+
+      function getRandomNumber(min, max) {
+        return Math.random() * (max - min) + min;
+      }
+      
+      function playSound(sound){
+        var newAudio=new Audio(sound.src);
+        newAudio.play();
+      }
+
+      //chrome audio loop stops working randomly. this ugly hack fixes it
+      function ambient_loop_hack(){
+        setTimeout(function(){
+          playSound(sounds.ambient_space);
+          ambient_loop_hack(); 
+        }, 5601 );
+      }
+
+    </script>
+  </head>
+  <body onload="init()">
+    <audio id="aquiring_position" preload src="sounds/acquiring_position.ogg"></audio> 
+    <audio id="crosshair_locked" preload src="sounds/crosshair_locked.ogg"></audio> 
+    <audio id="logon_established" preload src="sounds/logon_established.ogg"></audio> 
+    <audio id="zoom_sound" preload src="sounds/zoom_sound.ogg"></audio> 
+    <audio id="downloading_latest_intel_package" preload src="sounds/downloading_latest_intel_package.ogg"></audio> 
+    <audio id="ambient_space" preload autoplay src="sounds/ambient_space.ogg" onplay="ambient_loop_hack();"></audio>
+
+    <img class="ada_wheel" id="wheel_outer" src="img/ada_wheel_outer.png">
+    <img class="ada_wheel" id="wheel_inner" src="img/ada_wheel_inner.png">
+    <img id="border_gradient" src="img/border_gradient.png">
+    <div id="click_notify">click somewhere on the planet!</div>
+    <div id="universe"></div>
     
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
 
-    function onDocumentMouseUp( event ) {}
-
-    function generateRandomTrackingPoint(){
-      var min_azimuth=orbit.spherical.azimuth-0.5;
-      var max_azimuth=min_azimuth+Math.PI/2;
-      var spherical={};
-      spherical.azimuth = getRandomNumber(min_azimuth,max_azimuth);
-      spherical.inclination = getRandomNumber( 0.4, Math.PI-0.4 );
-      spherical.distance = earth_radius;
-
-      var point=orbit.convertSphericalToCartesian(spherical);
-      hud.updateTrackingPoint(new THREE.Vector3(point.x, point.y, point.z));
-    }
-
-    function getRandomNumber(min, max) {
-      return Math.random() * (max - min) + min;
-    }
-
-    function debug_init(){
-      var axes = new THREE.AxisHelper(100);
-      scene.add( axes );
-
-      stats = new Stats();
-      stats.domElement.style.position = 'absolute';
-      stats.domElement.style.bottom = '0px';
-      stats.domElement.style.zIndex = 100;
-      container.appendChild( stats.domElement );
-    }
-
-  </script>
+      ga('create', 'UA-42384097-1', 'github.com');
+      ga('send', 'pageview');
+    </script>
 
   </body>
-
 </html>
