@@ -79,6 +79,12 @@
         font-size:2em;
         display:none;
       }
+      #webgl_error{
+        margin-top: 10%;
+        text-align: center;
+        color:white;
+        display:none;
+      }
     </style>
     <script type="text/javascript" src="js/Detector.js"></script>
     <script type="text/javascript" src="js/three.js"></script>
@@ -122,7 +128,7 @@
       function init()
       {
         if(!Detector.webgl){  //check for webgl support
-          Detector.addGetWebGLMessage(); //Tell the user that his browser doesn't support webgl
+          document.getElementById('webgl_error').style.display="block";
           return;
         }
 
@@ -379,6 +385,7 @@
     <img class="ada_wheel" id="wheel_inner" src="img/ada_wheel_inner.png">
     <img id="border_gradient" src="img/border_gradient.png">
     <div id="click_notify">click somewhere on the planet!</div>
+    <div id="webgl_error">Sorry, your graphics card and/or webbrowser don't support WebGL!</div>
     <div id="universe"></div>
     
     <script>
