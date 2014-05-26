@@ -306,6 +306,17 @@
           hud.updateTrackingPoint( new THREE.Vector3(intersects[0].point.x, intersects[0].point.y, intersects[0].point.z) );
 
           var spherical=orbit.convertCartesionToSpherical( intersects[0].point );
+
+          console.log("--lat------------long------");
+          console.log(spherical.inclination,spherical.azimuth);
+          var latitude=((spherical.inclination*180/Math.PI)-90)*(-1);
+          var longitude=spherical.azimuth*180/Math.PI;
+          if( longitude > 180 ){ longitude-=360 }
+          console.log(latitude,longitude);
+
+
+          // http://www.ingress.com/intel?ll=LA.ITUDE,LO.NGITUDE&z=9
+          //http://www.ingress.com/intel?ll=48.729699,15.205459&z=20
           
           playSound(sounds.zoom_sound);
           playSound(sounds.downloading_latest_intel_package);
@@ -314,7 +325,9 @@
           border_gradient.style.display="none";
 
           orbit.tween_to_orbit(spherical, 3000, TWEEN.Easing.Cubic.InOut, function(){ 
-            orbit.reset();
+            window.location.href="http://www.ingress.com/intel?ll="+latitude+","+longitude+"&z=6";  
+
+            /*orbit.reset();
            
             hud.updateTrackingPoint(new THREE.Vector3(0,0,0));
             if( randomPointInterval === null ) { randomPointInterval = setInterval( generateRandomTrackingPoint , 2000); };
@@ -328,7 +341,7 @@
                   playSound(sounds.logon_established);
                 }, 2000);
               });
-            }, 50); 
+            }, 50);*/ 
           });
          
         }
